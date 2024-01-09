@@ -14,11 +14,12 @@ from typing import Iterable
 
 import torch
 
+import models_mae
 import util.misc as misc
 import util.lr_sched as lr_sched
 
 
-def train_one_epoch(model: torch.nn.Module,
+def train_one_epoch(model: [torch.nn.Module, models_mae.MaskedAutoencoderViT],
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
                     device: torch.device, epoch: int, loss_scaler,
                     log_writer=None,
@@ -30,6 +31,7 @@ def train_one_epoch(model: torch.nn.Module,
     print_freq = 20
 
     accum_iter = args.accum_iter
+    summary_step = args.summary_step
 
     optimizer.zero_grad()
 
@@ -45,7 +47,7 @@ def train_one_epoch(model: torch.nn.Module,
         samples = samples.to(device, non_blocking=True)
 
         with torch.cuda.amp.autocast():
-            loss, _, _ = model(samples, mask_ratio=args.mask_ratio)
+            loss, pred, mask = model(samples, mask_ratio=args.mask_ratio)
 
         loss_value = loss.item()
 
@@ -74,7 +76,9 @@ def train_one_epoch(model: torch.nn.Module,
             epoch_1000x = int((data_iter_step / len(data_loader) + epoch) * 1000)
             log_writer.add_scalar('train_loss', loss_value_reduce, epoch_1000x)
             log_writer.add_scalar('lr', lr, epoch_1000x)
-
+            if data_iter_step % summary_step == 0:
+                log_writer.add_image('input', samples[0], epoch_1000x)
+                log_writer.add_image('pred', model.unpatchify(pred)[0], epoch_1000x)
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()

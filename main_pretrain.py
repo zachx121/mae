@@ -16,6 +16,8 @@ import os
 import time
 from pathlib import Path
 
+from functools import partial
+import torch.nn as nn
 import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.tensorboard import SummaryWriter
@@ -47,8 +49,18 @@ def get_args_parser():
     parser.add_argument('--model', default='mae_vit_large_patch16', type=str, metavar='MODEL',
                         help='Name of model to train')
 
+    parser.add_argument('--save_ckpt_epoch', default=20, type=int)
+    parser.add_argument('--summary_step', default=1000, type=int)
+
     parser.add_argument('--input_size', default=224, type=int,
                         help='images input size')
+    parser.add_argument('--patch_size', default=16, type=int)
+    parser.add_argument('--embed_dim', default=768, type=int)
+    parser.add_argument('--depth', default=12, type=int)
+    parser.add_argument('--num_heads', default=12, type=int)
+    parser.add_argument('--decoder_embed_dim', default=512, type=int)
+    parser.add_argument('--decoder_depth', default=8, type=int)
+    parser.add_argument('--decoder_num_heads', default=16, type=int)
 
     parser.add_argument('--mask_ratio', default=0.75, type=float,
                         help='Masking ratio (percentage of removed patches).')
@@ -151,9 +163,18 @@ def main(args):
         pin_memory=args.pin_mem,
         drop_last=True,
     )
-    
+
     # define the model
-    model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
+    # model = models_mae.__dict__[args.model](norm_pix_loss=args.norm_pix_loss)
+    model = models_mae.MaskedAutoencoderViT(img_size=args.input_size,
+                                            patch_size=args.patch_size,
+                                            embed_dim=args.embed_dim,
+                                            depth=args.depth,
+                                            num_heads=args.num_heads,
+                                            decoder_embed_dim=args.decoder_embed_dim,
+                                            decoder_depth=args.decoder_depth,
+                                            decoder_num_heads=args.decoder_num_heads,
+                                            mlp_ratio=4, norm_layer=partial(nn.LayerNorm, eps=1e-6))
 
     model.to(device)
 
@@ -174,7 +195,7 @@ def main(args):
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
         model_without_ddp = model.module
-    
+
     # following timm: set wd as 0 for bias and norm layers
     param_groups = optim_factory.add_weight_decay(model_without_ddp, args.weight_decay)
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr, betas=(0.9, 0.95))
@@ -194,7 +215,7 @@ def main(args):
             log_writer=log_writer,
             args=args
         )
-        if args.output_dir and (epoch % 20 == 0 or epoch + 1 == args.epochs):
+        if args.output_dir and (epoch % args.save_ckpt_epoch == 0 or epoch + 1 == args.epochs):
             misc.save_model(
                 args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer,
                 loss_scaler=loss_scaler, epoch=epoch)
