@@ -14,7 +14,7 @@ python main_pretrain.py \
     --decoder_embed_dim 64 --decoder_depth 2 --decoder_num_heads 16\
     --output_dir /nfs/volume-100001-6/zhoutongzt/MGeo/mgeo_torch_ps1enc4dec2 \
     --log_dir /nfs/volume-100001-6/zhoutongzt/MGeo/mgeo_torch_ps1enc4dec2 \
-    --data_path /nfs/volume-100001-6/zhoutongzt/MGeo/LinkFeatureMap_images
+    --data_path /nfs/volume-100001-6/zhoutongzt/MGeo/feature_fm
 
 
 # /nfs/volume-100001-6/zhoutongzt/MGeo/CIFAR10_images 32x32 p4
