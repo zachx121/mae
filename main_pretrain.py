@@ -26,6 +26,8 @@ import torchvision.datasets as datasets
 
 import timm
 
+# timm 0.3.2 有一个使用torch._six的bug，需要按照下述这个commit去手动修复一下两行代码
+# https://github.com/huggingface/pytorch-image-models/commit/94ca140b67cb602ee7e146af32bfb63b60df96f4#diff-c7abf83bc43184f6101237b08d7c489c361f3d57b3538d633f6f01d35254b73c
 assert timm.__version__ == "0.3.2"  # version check
 import timm.optim.optim_factory as optim_factory
 
