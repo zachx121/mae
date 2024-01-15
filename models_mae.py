@@ -25,7 +25,7 @@ class MaskedAutoencoderViT(nn.Module):
     def __init__(self, img_size=224, patch_size=16, in_chans=3,
                  embed_dim=1024, depth=24, num_heads=16,
                  decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
-                 mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False):
+                 mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False, noise=None):
         super().__init__()
 
         # --------------------------------------------------------------------------
@@ -59,7 +59,7 @@ class MaskedAutoencoderViT(nn.Module):
         # --------------------------------------------------------------------------
 
         self.norm_pix_loss = norm_pix_loss
-
+        self.noise = noise
         self.initialize_weights()
 
     def initialize_weights(self):
@@ -120,7 +120,7 @@ class MaskedAutoencoderViT(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], 3, h * p, h * p))
         return imgs
 
-    def random_masking(self, x, mask_ratio):
+    def random_masking(self, x, mask_ratio, noise=None):
         """
         Perform per-sample random masking by per-sample shuffling.
         Per-sample shuffling is done by argsort random noise.
@@ -130,6 +130,7 @@ class MaskedAutoencoderViT(nn.Module):
         len_keep = int(L * (1 - mask_ratio))
         
         noise = torch.rand(N, L, device=x.device)  # noise in [0, 1]
+        noise = torch.rand(N, L, device=x.device) if noise is None else noise
         
         # sort noise for each sample
         _, ids_shuffle = torch.sort(noise, dim=1)  # ascend: small is keep, large is remove
@@ -155,7 +156,7 @@ class MaskedAutoencoderViT(nn.Module):
         x = x + self.pos_embed[:, 1:, :]
 
         # masking: length -> length * mask_ratio
-        x, mask, ids_restore = self.random_masking(x, mask_ratio)
+        x, mask, ids_restore = self.random_masking(x, mask_ratio, self.noise)
 
         # append cls token
         cls_token = self.cls_token + self.pos_embed[:, :1, :]
