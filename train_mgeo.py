@@ -82,6 +82,7 @@ if __name__ == '__main__':
         model.train(True)
         optimizer.zero_grad()
         for step, (batch_samples, lbl) in tqdm(enumerate(data_loader_train)):
+            batch_samples = batch_samples.to(DEVICE, non_blocking=True)
             loss, pred, mask = model(batch_samples, mask_ratio=hps.mask_ratio)
             loss.backward()
 
