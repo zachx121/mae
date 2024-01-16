@@ -12,7 +12,6 @@ import sys
 import torch
 import torch.nn as nn
 import argparse
-from tqdm.auto import tqdm
 import numpy as np
 from PIL import Image
 import datetime
@@ -83,7 +82,7 @@ if __name__ == '__main__':
     for epoch in range(0, hps.epochs):
         model.train(True)
         optimizer.zero_grad()
-        for step, (batch_samples, lbl) in tqdm(enumerate(data_loader_train)):
+        for step, (batch_samples, lbl) in enumerate(data_loader_train):
             batch_samples = batch_samples.to(DEVICE, non_blocking=True)
             loss, pred, mask = model(batch_samples, mask_ratio=hps.mask_ratio)
             loss.backward()
@@ -95,7 +94,7 @@ if __name__ == '__main__':
 
             optimizer.step()
 
-        if epoch % hps.save_ckpt_epoch == 0 or epoch + 1 == hps.epochs:
+        if epoch % hps.save_ckpt_epoch == 0 or epoch + 1 == hps.epochs or epoch <= 3:
             logging.info(f">>> Saving ckpt at epoch-{epoch}")
             # 1. 存完整的参数和模型结构
             # torch.save(model, 'model.pth')
