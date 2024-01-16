@@ -2,8 +2,7 @@ import logging
 
 logging.basicConfig(format='[%(asctime)s-%(levelname)s]: %(message)s',
                     datefmt="%Y-%m-%d %H:%M:%S",
-                    level=logging.INFO,
-                    filename="./train.log")
+                    level=logging.INFO)
 
 from torch.utils import data
 from torchvision import datasets, transforms
