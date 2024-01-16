@@ -41,11 +41,13 @@ class HParams:
     num_heads = 12
     decoder_embed_dim = 256
     decoder_depth = 8
-    decoder_num_heads = 12
+    decoder_num_heads = 16
 
 
 if __name__ == '__main__':
     hps = HParams()
+    assert hps.decoder_embed_dim % hps.decoder_num_heads == 0
+
     ckpt_dir = "/nfs/volume-100001-6/zhoutongzt/MGeo/model_torch/ps{}_enc{}dec{}_maskr{}".format(hps.patch_size, hps.depth, hps.decoder_depth, hps.mask_ratio)
     tbd_writer = SummaryWriter(log_dir=ckpt_dir)
 
@@ -95,6 +97,12 @@ if __name__ == '__main__':
 
         if epoch % hps.save_ckpt_epoch == 0 or epoch + 1 == hps.epochs:
             logging.info(f">>> Saving ckpt at epoch-{epoch}")
+            # 1. 存完整的参数和模型结构
+            # torch.save(model, 'model.pth')
+            # 2. 只存模型的权重参数
+            torch.save(model.state_dict(), os.path.join(ckpt_dir, f"{epoch}.pth"))
+            # model = MyModel()  # 用同样的模型架构创建模型
+            # model.load_state_dict(torch.load('model_state_dict.pth'))
 
             pass
 
